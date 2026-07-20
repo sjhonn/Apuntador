@@ -1,0 +1,54 @@
+@page "/notas"
+@inject AppDataService DataService
+@inject IJSRuntime JS
+<PageTitle>Notas | Apuntador</PageTitle>
+
+<div class="page-header"><div><span class="eyebrow">BLOC PERSONAL</span><h1>Mis notas</h1><p>Crea, clasifica y encuentra información rápidamente.</p></div><button class="btn btn-primary" @onclick="NewNote">+ Nueva nota</button></div>
+
+<section class="toolbar page-card">
+    <label class="search-box"><span>⌕</span><input @bind="search" @bind:event="oninput" placeholder="Buscar por título o contenido..." /></label>
+    <select @bind="categoryFilter"><option value="">Todas las categorías</option>@foreach (var category in DataService.Data.NoteCategories.Order()) { <option>@category</option> }</select>
+    <label class="check-filter"><input type="checkbox" @bind="importantOnly" /> Solo importantes</label>
+</section>
+
+@if (showEditor)
+{
+    <section class="page-card editor-card">
+        <div class="section-heading"><h2>@(editingExisting ? "Editar nota" : "Nueva nota")</h2><button class="icon-button" @onclick="CancelEdit">×</button></div>
+        <EditForm Model="draft" OnValidSubmit="SaveNote">
+            <DataAnnotationsValidator />
+            <div class="form-grid">
+                <label class="field field-wide"><span>Título *</span><InputText @bind-Value="draft.Title" maxlength="120" required /></label>
+                <label class="field"><span>Categoría</span><InputText @bind-Value="draft.Category" list="note-categories" maxlength="40" /><datalist id="note-categories">@foreach (var c in DataService.Data.NoteCategories) { <option value="@c"></option> }</datalist></label>
+                <label class="toggle-field"><InputCheckbox @bind-Value="draft.IsImportant" /><span>Marcar como importante</span></label>
+                <label class="field field-wide"><span>Contenido *</span><InputTextArea @bind-Value="draft.Content" rows="8" required /></label>
+            </div>
+            <div class="form-actions"><button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancelar</button><button class="btn btn-primary" type="submit">Guardar nota</button></div>
+        </EditForm>
+    </section>
+}
+
+<section class="notes-grid">
+    @if (!FilteredNotes.Any()) { <div class="empty-state page-card full-span"><div class="empty-icon">▤</div><h2>No se encontraron notas</h2><p>Crea una nota nueva o modifica los filtros de búsqueda.</p></div> }
+    else foreach (var note in FilteredNotes)
+    {
+        <article class="note-card page-card @(note.IsImportant ? "important" : "")">
+            <div class="note-meta"><span>@note.Category</span><button class="star-button @(note.IsImportant ? "active" : "")" title="Importante" @onclick="() => DataService.ToggleImportantAsync(note.Id)">★</button></div>
+            <h2>@note.Title</h2><p>@note.Content</p>
+            <div class="card-footer"><small>@note.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</small><div><button class="text-button" @onclick="() => EditNote(note)">Editar</button><button class="text-button danger" @onclick="() => DeleteNote(note)">Eliminar</button></div></div>
+        </article>
+    }
+</section>
+
+@code {
+    private string search = string.Empty, categoryFilter = string.Empty;
+    private bool importantOnly, showEditor, editingExisting;
+    private NoteItem draft = new();
+    private IEnumerable<NoteItem> FilteredNotes => DataService.Data.Notes.Where(n => (!importantOnly || n.IsImportant) && (string.IsNullOrEmpty(categoryFilter) || n.Category == categoryFilter) && (string.IsNullOrWhiteSpace(search) || n.Title.Contains(search, StringComparison.OrdinalIgnoreCase) || n.Content.Contains(search, StringComparison.OrdinalIgnoreCase))).OrderByDescending(n => n.IsImportant).ThenByDescending(n => n.UpdatedAt);
+    protected override async Task OnInitializedAsync() => await DataService.InitializeAsync();
+    private void NewNote() { draft = new NoteItem(); editingExisting = false; showEditor = true; }
+    private void EditNote(NoteItem n) { draft = new NoteItem { Id=n.Id, Title=n.Title, Content=n.Content, Category=n.Category, IsImportant=n.IsImportant, CreatedAt=n.CreatedAt, UpdatedAt=n.UpdatedAt }; editingExisting=true; showEditor=true; }
+    private void CancelEdit() { showEditor=false; draft=new(); }
+    private async Task SaveNote() { if (string.IsNullOrWhiteSpace(draft.Title) || string.IsNullOrWhiteSpace(draft.Content)) return; draft.Title=draft.Title.Trim(); draft.Content=draft.Content.Trim(); draft.Category=string.IsNullOrWhiteSpace(draft.Category)?"General":draft.Category.Trim(); await DataService.UpsertNoteAsync(draft); CancelEdit(); }
+    private async Task DeleteNote(NoteItem n) { if (await JS.InvokeAsync<bool>("confirm", $"¿Eliminar la nota '{n.Title}'? Esta acción no se puede deshacer.")) await DataService.DeleteNoteAsync(n.Id); }
+}

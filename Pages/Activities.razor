@@ -1,0 +1,51 @@
+@page "/actividades"
+@inject AppDataService DataService
+@inject IJSRuntime JS
+<PageTitle>Actividades | Apuntador</PageTitle>
+
+<div class="page-header"><div><span class="eyebrow">SEGUIMIENTO</span><h1>Actividades</h1><p>Administra tus tareas, citas y recordatorios.</p></div><button class="btn btn-primary" @onclick="NewActivity">+ Nueva actividad</button></div>
+
+<div class="filter-tabs page-card"><button class="@(filter=="all"?"active":"")" @onclick="ShowAll">Todas</button><button class="@(filter=="pending"?"active":"")" @onclick="ShowPending">Pendientes</button><button class="@(filter=="completed"?"active":"")" @onclick="ShowCompleted">Completadas</button></div>
+
+@if (showEditor)
+{
+<section class="page-card editor-card">
+<div class="section-heading"><h2>@(editingExisting ? "Editar actividad" : "Nueva actividad")</h2><button class="icon-button" @onclick="Cancel">×</button></div>
+<EditForm Model="draft" OnValidSubmit="Save">
+<div class="form-grid">
+<label class="field field-wide"><span>Título *</span><InputText @bind-Value="draft.Title" required maxlength="120" /></label>
+<label class="field field-wide"><span>Descripción</span><InputTextArea @bind-Value="draft.Description" rows="4" /></label>
+<label class="field"><span>Fecha *</span><InputDate @bind-Value="draft.Date" /></label>
+<label class="field"><span>Hora</span><input type="time" value="@TimeValue" @onchange="SetTime" /></label>
+<label class="field"><span>Categoría</span><InputSelect @bind-Value="draft.Category"><option>Personal</option><option>Trabajo</option><option>Estudio</option><option>Cita</option><option>Recordatorio</option></InputSelect></label>
+<label class="toggle-field"><InputCheckbox @bind-Value="draft.IsCompleted" /><span>Actividad completada</span></label>
+</div><div class="form-actions"><button type="button" class="btn btn-secondary" @onclick="Cancel">Cancelar</button><button class="btn btn-primary">Guardar actividad</button></div>
+</EditForm></section>
+}
+
+<section class="activity-list">
+@if (!Filtered.Any()) { <div class="empty-state page-card"><div class="empty-icon">✓</div><h2>No hay actividades</h2><p>No existen registros para el filtro seleccionado.</p></div> }
+else foreach (var item in Filtered)
+{
+<article class="activity-row page-card @(item.IsCompleted?"completed":"")">
+<button class="complete-button" aria-label="Cambiar estado" @onclick="() => DataService.ToggleActivityAsync(item.Id)">@(item.IsCompleted?"✓":"")</button>
+<div class="activity-date"><strong>@item.Date.Day</strong><span>@item.Date.ToString("MMM", CultureInfo.GetCultureInfo("es-PE"))</span></div>
+<div class="activity-main"><div class="activity-labels"><span>@item.Category</span>@if(item.Date.Date < DateTime.Today && !item.IsCompleted){<span class="late">Vencida</span>}</div><h2>@item.Title</h2><p>@item.Description</p><small>@(item.Time?.ToString(@"hh\:mm") ?? "Todo el día")</small></div>
+<div class="row-actions"><button class="text-button" @onclick="() => Edit(item)">Editar</button><button class="text-button danger" @onclick="() => Delete(item)">Eliminar</button></div>
+</article>
+}
+</section>
+
+@code {
+private string filter="all"; private bool showEditor, editingExisting; private ActivityItem draft=new();
+private string TimeValue => draft.Time?.ToString(@"hh\:mm") ?? "";
+private IEnumerable<ActivityItem> Filtered => DataService.Data.Activities.Where(x => filter=="all" || (filter=="pending" && !x.IsCompleted) || (filter=="completed" && x.IsCompleted)).OrderBy(x=>x.IsCompleted).ThenBy(x=>x.Date).ThenBy(x=>x.Time);
+protected override async Task OnInitializedAsync()=>await DataService.InitializeAsync();
+private void ShowAll()=>filter="all"; private void ShowPending()=>filter="pending"; private void ShowCompleted()=>filter="completed";
+private void NewActivity(){draft=new ActivityItem{Date=DateTime.Today};editingExisting=false;showEditor=true;}
+private void Edit(ActivityItem x){draft=new ActivityItem{Id=x.Id,Title=x.Title,Description=x.Description,Date=x.Date,Time=x.Time,Category=x.Category,IsCompleted=x.IsCompleted,CreatedAt=x.CreatedAt};editingExisting=true;showEditor=true;}
+private void Cancel(){showEditor=false;draft=new();}
+private void SetTime(ChangeEventArgs e){ if(TimeSpan.TryParse(e.Value?.ToString(),out var t)) draft.Time=t; else draft.Time=null; }
+private async Task Save(){if(string.IsNullOrWhiteSpace(draft.Title))return;draft.Title=draft.Title.Trim();await DataService.UpsertActivityAsync(draft);Cancel();}
+private async Task Delete(ActivityItem x){if(await JS.InvokeAsync<bool>("confirm",$"¿Eliminar la actividad '{x.Title}'?"))await DataService.DeleteActivityAsync(x.Id);}
+}

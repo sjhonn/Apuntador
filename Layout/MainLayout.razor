@@ -1,0 +1,46 @@
+@inherits LayoutComponentBase
+@inject AppDataService DataService
+@inject ThemeService ThemeService
+
+<div class="app-shell">
+    <aside class="sidebar @(menuOpen ? "open" : "")">
+        <div class="brand">
+            <img src="images/logo-apuntador.png" alt="Logo de Apuntador" />
+            <div><strong>APUNTADOR</strong><span>Organización personal</span></div>
+        </div>
+        <nav class="main-nav" @onclick="CloseMenu">
+            <NavLink href="" Match="NavLinkMatch.All"><span>⌂</span> Inicio</NavLink>
+            <NavLink href="notas"><span>▤</span> Notas</NavLink>
+            <NavLink href="calendario"><span>▦</span> Calendario</NavLink>
+            <NavLink href="actividades"><span>✓</span> Actividades</NavLink>
+            <NavLink href="respaldo"><span>⇅</span> Respaldo</NavLink>
+        </nav>
+        <div class="sidebar-footer"><span>Datos guardados en este navegador</span></div>
+    </aside>
+    @if (menuOpen) { <button class="backdrop" aria-label="Cerrar menú" @onclick="CloseMenu"></button> }
+    <div class="content-shell">
+        <header class="topbar">
+            <button class="icon-button mobile-menu" aria-label="Abrir menú" @onclick="ToggleMenu">☰</button>
+            <div class="topbar-title"><span class="status-dot"></span> Aplicación local y privada</div>
+            <button class="theme-button" @onclick="ToggleTheme" aria-label="Cambiar tema">
+                @(DataService.Data.Theme == "dark" ? "☀ Modo claro" : "◐ Modo oscuro")
+            </button>
+        </header>
+        <main class="page-content">@Body</main>
+        <footer class="app-footer">Apuntador · Sin servidores · Sin costos · Tus datos permanecen en tu navegador</footer>
+    </div>
+</div>
+
+@code {
+    private bool menuOpen;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await DataService.InitializeAsync();
+        await ThemeService.ApplyAsync();
+        StateHasChanged();
+    }
+    private void ToggleMenu() => menuOpen = !menuOpen;
+    private void CloseMenu() => menuOpen = false;
+    private async Task ToggleTheme() { await ThemeService.ToggleAsync(); StateHasChanged(); }
+}

@@ -1,0 +1,49 @@
+@page "/"
+@inject AppDataService DataService
+@implements IDisposable
+<PageTitle>Inicio | Apuntador</PageTitle>
+
+<section class="hero page-card">
+    <div class="hero-copy">
+        <span class="eyebrow">CONTROL PERSONAL</span>
+        <h1>Todo lo importante,<br /><em>en un solo lugar.</em></h1>
+        <p>Organiza notas, actividades y recordatorios. La información se guarda únicamente en este dispositivo.</p>
+        <div class="hero-actions"><a class="btn btn-primary" href="notas">Crear una nota</a><a class="btn btn-secondary" href="calendario">Abrir calendario</a></div>
+    </div>
+    <img class="hero-logo" src="images/logo-apuntador.png" alt="Apuntador" />
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card"><span>Notas</span><strong>@DataService.Data.Notes.Count</strong><small>@DataService.Data.Notes.Count(x => x.IsImportant) importantes</small></article>
+    <article class="stat-card"><span>Pendientes</span><strong>@PendingCount</strong><small>Actividades por completar</small></article>
+    <article class="stat-card"><span>Próximos 7 días</span><strong>@Upcoming.Count</strong><small>Recordatorios programados</small></article>
+    <article class="stat-card"><span>Completadas</span><strong>@DataService.Data.Activities.Count(x => x.IsCompleted)</strong><small>Actividades finalizadas</small></article>
+</section>
+
+<div class="dashboard-grid">
+    <section class="page-card section-card">
+        <div class="section-heading"><div><span class="eyebrow">PRÓXIMAMENTE</span><h2>Recordatorios</h2></div><a href="actividades">Ver todos</a></div>
+        @if (Upcoming.Count == 0) { <div class="empty-inline">No tienes recordatorios para los próximos siete días.</div> }
+        else foreach (var item in Upcoming.Take(5))
+        {
+            <div class="timeline-item"><div class="date-badge"><strong>@item.Date.Day</strong><span>@item.Date.ToString("MMM", CultureInfo.GetCultureInfo("es-PE"))</span></div><div><strong>@item.Title</strong><p>@item.Category · @(item.Time?.ToString(@"hh\:mm") ?? "Todo el día")</p></div></div>
+        }
+    </section>
+    <section class="page-card section-card">
+        <div class="section-heading"><div><span class="eyebrow">DESTACADAS</span><h2>Notas importantes</h2></div><a href="notas">Ver notas</a></div>
+        @if (!ImportantNotes.Any()) { <div class="empty-inline">Marca una nota como importante para verla aquí.</div> }
+        else foreach (var note in ImportantNotes.Take(4))
+        {
+            <article class="mini-note"><span>@note.Category</span><strong>@note.Title</strong><p>@Preview(note.Content)</p></article>
+        }
+    </section>
+</div>
+
+@code {
+    private int PendingCount => DataService.Data.Activities.Count(x => !x.IsCompleted);
+    private List<ActivityItem> Upcoming => DataService.Data.Activities.Where(x => !x.IsCompleted && x.Date.Date >= DateTime.Today && x.Date.Date <= DateTime.Today.AddDays(7)).OrderBy(x => x.Date).ThenBy(x => x.Time).ToList();
+    private IEnumerable<NoteItem> ImportantNotes => DataService.Data.Notes.Where(x => x.IsImportant).OrderByDescending(x => x.UpdatedAt);
+    protected override async Task OnInitializedAsync() { await DataService.InitializeAsync(); DataService.Changed += StateHasChanged; }
+    public void Dispose() => DataService.Changed -= StateHasChanged;
+    private static string Preview(string value) => value.Length <= 100 ? value : value[..100] + "…";
+}

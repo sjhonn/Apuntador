@@ -1,0 +1,17 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Página no encontrada | Apuntador</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <section class="empty-state page-card">
+                <div class="empty-icon">404</div>
+                <h1>Página no encontrada</h1>
+                <p>La dirección solicitada no existe dentro de Apuntador.</p>
+                <a class="btn btn-primary" href="./">Volver al inicio</a>
+            </section>
+        </LayoutView>
+    </NotFound>
+</Router>

@@ -1,0 +1,27 @@
+@page "/calendario"
+@inject AppDataService DataService
+<PageTitle>Calendario | Apuntador</PageTitle>
+
+<div class="page-header"><div><span class="eyebrow">PLANIFICACIÓN</span><h1>Calendario</h1><p>Consulta tus actividades organizadas por fecha.</p></div><a class="btn btn-primary" href="actividades">+ Registrar actividad</a></div>
+<section class="calendar page-card">
+<div class="calendar-header"><button class="icon-button" @onclick="Previous">‹</button><h2>@current.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("es-PE"))</h2><button class="icon-button" @onclick="Next">›</button></div>
+<div class="calendar-weekdays">@foreach(var d in new[]{"Lun","Mar","Mié","Jue","Vie","Sáb","Dom"}){<span>@d</span>}</div>
+<div class="calendar-grid">
+@foreach(var day in Days)
+{
+<button class="calendar-day @(!day.InMonth?"muted":"") @(day.Date==DateTime.Today?"today":"") @(selectedDate==day.Date?"selected":"")" @onclick="() => selectedDate=day.Date">
+<span class="day-number">@day.Date.Day</span><div class="day-events">@foreach(var a in ActivitiesFor(day.Date).Take(3)){<span class="event-dot @(a.IsCompleted?"done":"")" title="@a.Title">@a.Title</span>}@if(ActivitiesFor(day.Date).Count()>3){<small>+@(ActivitiesFor(day.Date).Count()-3) más</small>}</div>
+</button>
+}
+</div></section>
+<section class="page-card selected-day"><div class="section-heading"><div><span class="eyebrow">FECHA SELECCIONADA</span><h2>@selectedDate.ToString("dddd, d 'de' MMMM", CultureInfo.GetCultureInfo("es-PE"))</h2></div></div>
+@if(!ActivitiesFor(selectedDate).Any()){<div class="empty-inline">No hay actividades registradas para esta fecha.</div>}else foreach(var a in ActivitiesFor(selectedDate).OrderBy(x=>x.Time)){<div class="agenda-item"><span>@(a.Time?.ToString(@"hh\:mm")??"Todo el día")</span><div><strong class="@(a.IsCompleted?"strike":"")">@a.Title</strong><p>@a.Category · @a.Description</p></div></div>}</section>
+
+@code {
+private DateTime current=new(DateTime.Today.Year,DateTime.Today.Month,1); private DateTime selectedDate=DateTime.Today;
+private record CalendarDay(DateTime Date,bool InMonth);
+private IEnumerable<CalendarDay> Days { get { var first=current; var offset=((int)first.DayOfWeek+6)%7; var start=first.AddDays(-offset); return Enumerable.Range(0,42).Select(i=>new CalendarDay(start.AddDays(i),start.AddDays(i).Month==current.Month)); } }
+protected override async Task OnInitializedAsync()=>await DataService.InitializeAsync();
+private List<ActivityItem> ActivitiesFor(DateTime date)=>DataService.Data.Activities.Where(x=>x.Date.Date==date.Date).ToList();
+private void Previous()=>current=current.AddMonths(-1); private void Next()=>current=current.AddMonths(1);
+}
