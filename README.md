@@ -1,42 +1,75 @@
 # Apuntador
 
-Aplicación personal de notas, calendario, actividades y recordatorios creada con Blazor WebAssembly. Funciona completamente en el navegador y guarda los datos en LocalStorage.
+Aplicación personal de notas, actividades, calendario y recordatorios desarrollada con Blazor WebAssembly y .NET 8.
 
-## Funciones
+## Ejecutar localmente
 
-- Crear, editar, buscar, clasificar y eliminar notas.
-- Marcar notas importantes.
-- Calendario mensual con actividades por fecha.
-- Actividades pendientes, completadas y vencidas.
-- Exportación JSON y TXT; importación de copias JSON.
-- Modo claro y oscuro persistente.
-- Diseño responsive para móvil, tablet y escritorio.
-- Despliegue automático y gratuito en GitHub Pages.
-
-## Ejecución local
-
-Requiere .NET 8 SDK.
+Desde la carpeta donde se encuentra `Apuntador.csproj`:
 
 ```bash
 dotnet restore
 dotnet run
 ```
 
-Abre la URL HTTPS indicada en la consola. Para simular producción:
+No ejecutes `cd Apuntador` si la terminal ya muestra una ruta terminada en `/Apuntador`.
 
-```bash
-dotnet publish -c Release -o publish
+## Dónde está index.html
+
+En un proyecto Blazor WebAssembly, el archivo fuente está en:
+
+```text
+wwwroot/index.html
 ```
 
-Puedes servir `publish/wwwroot` con cualquier servidor HTTP estático. No abras `index.html` directamente como archivo, porque WebAssembly requiere HTTP.
+Ese archivo no se publica directamente desde el código fuente. Durante `dotnet publish`, Blazor genera un sitio estático completo y coloca el `index.html` final en:
 
-## Publicación en GitHub Pages
+```text
+publish/wwwroot/index.html
+```
 
-1. Crea un repositorio de GitHub y sube todo el proyecto a la rama `main`.
-2. En `Settings > Pages`, selecciona `GitHub Actions` como fuente.
-3. El workflow `.github/workflows/deploy-pages.yml` compilará y publicará el sitio automáticamente.
-4. La ruta base se ajusta al nombre real del repositorio durante el despliegue.
+GitHub Pages necesita ese archivo compilado junto con `_framework`, CSS, JavaScript e imágenes. Por eso no basta con mover o copiar únicamente `wwwroot/index.html` a la raíz del repositorio.
 
-## Privacidad
+## Publicación recomendada: GitHub Actions
 
-No existe backend ni base de datos externa. La información queda guardada en el navegador del usuario. Se recomienda exportar una copia JSON periódicamente.
+1. Sube el contenido de esta carpeta al repositorio de GitHub.
+2. En GitHub abre `Settings > Pages`.
+3. En `Build and deployment`, selecciona `GitHub Actions`.
+4. Haz un push a la rama `main`.
+5. El workflow `.github/workflows/deploy-pages.yml` compilará el proyecto y publicará `publish/wwwroot`.
+
+El workflow ajusta automáticamente `<base href>` tanto para repositorios normales como para repositorios llamados `usuario.github.io`.
+
+## Publicación alternativa desde /docs
+
+En Git Bash:
+
+```bash
+bash scripts/publicar-docs.sh NOMBRE-EXACTO-DEL-REPOSITORIO
+git add docs
+git commit -m "Publicar Apuntador"
+git push
+```
+
+En PowerShell:
+
+```powershell
+.\scripts\publicar-docs.ps1 -RepoName "NOMBRE-EXACTO-DEL-REPOSITORIO"
+git add docs
+git commit -m "Publicar Apuntador"
+git push
+```
+
+Luego configura `Settings > Pages > Deploy from a branch > main > /docs`.
+
+No uses simultáneamente GitHub Actions y `/docs`; selecciona un solo método.
+
+## Formatos de exportación
+
+- JSON: copia completa restaurable.
+- TXT: lectura simple de notas y actividades.
+- CSV: notas y actividades por separado, compatible con Excel.
+- Markdown: documentación y GitHub.
+- HTML: archivo visual para navegador.
+- ICS: actividades para calendarios externos.
+
+Los datos de trabajo permanecen en LocalStorage. Para trasladarlos a otro navegador o equipo, exporta JSON e impórtalo en la otra instalación.

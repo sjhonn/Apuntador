@@ -2,3 +2,29 @@
 @media(max-width:1100px){.stats-grid{grid-template-columns:repeat(2,1fr)}.notes-grid{grid-template-columns:repeat(2,1fr)}.hero-logo{width:280px}.backup-grid{grid-template-columns:1fr 1fr}.backup-card:last-child{grid-column:1/-1}}
 @media(max-width:800px){.sidebar{transform:translateX(-100%);transition:transform .22s}.sidebar.open{transform:none}.content-shell{margin-left:0}.mobile-menu{display:inline-flex}.backdrop{display:block;position:fixed;inset:0;border:0;background:rgba(0,0,0,.62);z-index:15}.topbar{padding:0 18px}.topbar-title{display:none}.page-content{padding:22px 16px}.hero{padding:32px;min-height:auto}.hero-logo{width:180px;opacity:.35;position:absolute;right:-20px}.hero-copy{max-width:88%}.dashboard-grid{grid-template-columns:1fr}.page-header{align-items:flex-start;flex-direction:column}.toolbar{flex-wrap:wrap}.search-box{flex-basis:100%}.calendar-day{min-height:85px}.event-dot{font-size:0;width:7px;height:7px;border-radius:50%;padding:0;border:0;background:var(--primary)}.day-events{display:flex;flex-wrap:wrap}.activity-row{align-items:flex-start}.row-actions{flex-direction:column}.theme-button{font-size:0}.theme-button:first-letter{font-size:1rem}}
 @media(max-width:560px){.hero{padding:27px 22px}.hero h1{font-size:2.35rem}.hero p{font-size:.92rem}.hero-actions{flex-direction:column;align-items:stretch}.stats-grid,.notes-grid,.backup-grid,.form-grid{grid-template-columns:1fr}.backup-card:last-child,.field-wide{grid-column:auto}.stat-card{padding:17px}.toolbar select,.check-filter{width:100%}.activity-row{display:grid;grid-template-columns:auto auto 1fr}.activity-main{grid-column:2/4}.row-actions{grid-column:2/4;flex-direction:row}.calendar{padding:8px}.calendar-day{min-height:60px;padding:4px}.calendar-weekdays span{font-size:.63rem}.calendar-header h2{min-width:150px;font-size:1.05rem}.day-number{width:23px;height:23px}.selected-day{padding:18px}.backup-grid{gap:12px}.topbar{height:62px}.app-footer{padding:18px}.data-summary{flex-direction:column;gap:8px}}
+
+/* Exportación y respaldo */
+.format-section { margin-bottom: 1.25rem; }
+.format-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.format-grid-many { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.format-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-soft); min-width: 0; }
+.format-card.compact { grid-template-columns: auto 1fr; align-items: start; }
+.format-card.compact .btn { grid-column: 1 / -1; width: 100%; }
+.format-card h3 { margin: 0 0 .25rem; font-size: 1rem; }
+.format-card p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.45; }
+.format-card .btn { white-space: nowrap; }
+
+@media (max-width: 1050px) {
+  .format-grid-many { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .format-grid, .format-grid-many { grid-template-columns: 1fr; }
+  .format-card { grid-template-columns: auto 1fr; }
+  .format-card .btn, .format-card .file-input { grid-column: 1 / -1; width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .format-card { padding: .85rem; gap: .75rem; }
+  .backup-icon { width: 44px; min-width: 44px; height: 44px; font-size: .72rem; }
+}

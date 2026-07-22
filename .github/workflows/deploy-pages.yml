@@ -1,4 +1,4 @@
-name: Deploy Apuntador to GitHub Pages
+name: Publicar Apuntador en GitHub Pages
 
 on:
   push:
@@ -18,29 +18,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Descargar repositorio
         uses: actions/checkout@v4
-      - name: Setup .NET
+
+      - name: Instalar .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Restore
-        run: dotnet restore
-      - name: Publish
-        run: dotnet publish -c Release -o publish
-      - name: Prepare GitHub Pages
+
+      - name: Restaurar dependencias
+        run: dotnet restore Apuntador.csproj
+
+      - name: Compilar para producción
+        run: dotnet publish Apuntador.csproj -c Release -o publish
+
+      - name: Preparar GitHub Pages
         shell: bash
         run: |
-          BASE_PATH="/${{ github.event.repository.name }}/"
+          REPOSITORY_NAME="${GITHUB_REPOSITORY#*/}"
+          if [ "$REPOSITORY_NAME" = "${GITHUB_REPOSITORY_OWNER}.github.io" ]; then
+            BASE_PATH="/"
+          else
+            BASE_PATH="/${REPOSITORY_NAME}/"
+          fi
           sed -i "s|<base href=\"/\" />|<base href=\"${BASE_PATH}\" />|" publish/wwwroot/index.html
           cp publish/wwwroot/index.html publish/wwwroot/404.html
           touch publish/wwwroot/.nojekyll
-      - name: Configure Pages
+
+      - name: Configurar Pages
         uses: actions/configure-pages@v5
-      - name: Upload artifact
+
+      - name: Subir sitio compilado
         uses: actions/upload-pages-artifact@v3
         with:
           path: publish/wwwroot
+
   deploy:
     environment:
       name: github-pages
@@ -48,6 +60,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy
+      - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4

@@ -1,21 +1,70 @@
 @page "/respaldo"
 @inject AppDataService DataService
 @inject LocalStorageService Storage
-<PageTitle>Respaldo | Apuntador</PageTitle>
+<PageTitle>Exportar y respaldo | Apuntador</PageTitle>
 
-<div class="page-header"><div><span class="eyebrow">SEGURIDAD LOCAL</span><h1>Respaldo de información</h1><p>Exporta una copia de tus datos o restaura un archivo anterior.</p></div></div>
-<div class="backup-grid">
-<section class="page-card backup-card"><div class="backup-icon">JSON</div><h2>Copia completa</h2><p>Incluye notas, actividades, categorías y configuración visual.</p><button class="btn btn-primary" @onclick="ExportJson">Descargar JSON</button></section>
-<section class="page-card backup-card"><div class="backup-icon">TXT</div><h2>Notas en texto</h2><p>Genera un documento legible con todas tus notas actuales.</p><button class="btn btn-secondary" @onclick="ExportText">Descargar texto</button></section>
-<section class="page-card backup-card"><div class="backup-icon">⇧</div><h2>Importar respaldo</h2><p>La importación reemplazará toda la información actual.</p><input @ref="fileInput" class="file-input" type="file" accept="application/json,.json" /><button class="btn btn-secondary" @onclick="Import">Importar JSON</button></section>
+<div class="page-header">
+    <div><span class="eyebrow">PORTABILIDAD</span><h1>Exportar y respaldar</h1><p>Descarga tu información en formatos reutilizables o restaura una copia completa.</p></div>
 </div>
-@if(!string.IsNullOrEmpty(message)){<div class="alert @(success?"success":"error")">@message</div>}
-<section class="page-card privacy-box"><h2>Privacidad y funcionamiento</h2><p>Apuntador no envía información a internet. Los registros permanecen en LocalStorage dentro de este navegador. Al limpiar los datos del navegador o cambiar de dispositivo, la información se perderá si no existe una copia de seguridad.</p><div class="data-summary"><span><strong>@DataService.Data.Notes.Count</strong> notas</span><span><strong>@DataService.Data.Activities.Count</strong> actividades</span></div></section>
+
+<section class="page-card format-section">
+    <div class="section-heading"><div><span class="eyebrow">COPIA DE SEGURIDAD</span><h2>Respaldo completo</h2></div></div>
+    <div class="format-grid">
+        <article class="format-card"><div class="backup-icon">JSON</div><div><h3>Copia completa</h3><p>Formato principal para restaurar notas, actividades, categorías y tema.</p></div><button class="btn btn-primary" @onclick="ExportJson">Descargar</button></article>
+        <article class="format-card"><div class="backup-icon">⇧</div><div><h3>Restaurar JSON</h3><p>Reemplaza la información actual con una copia generada por Apuntador.</p></div><input @ref="fileInput" class="file-input" type="file" accept="application/json,.json" /><button class="btn btn-secondary" @onclick="Import">Importar</button></article>
+    </div>
+</section>
+
+<section class="page-card format-section">
+    <div class="section-heading"><div><span class="eyebrow">FORMATOS DE SALIDA</span><h2>Guardar y compartir</h2></div></div>
+    <div class="format-grid format-grid-many">
+        <article class="format-card compact"><div class="backup-icon">TXT</div><div><h3>Texto</h3><p>Notas y actividades en lectura simple.</p></div><button class="btn btn-secondary" @onclick="ExportText">Descargar</button></article>
+        <article class="format-card compact"><div class="backup-icon">CSV</div><div><h3>Notas CSV</h3><p>Compatible con Excel y hojas de cálculo.</p></div><button class="btn btn-secondary" @onclick="ExportNotesCsv">Descargar</button></article>
+        <article class="format-card compact"><div class="backup-icon">CSV</div><div><h3>Actividades CSV</h3><p>Tabla independiente de tareas y recordatorios.</p></div><button class="btn btn-secondary" @onclick="ExportActivitiesCsv">Descargar</button></article>
+        <article class="format-card compact"><div class="backup-icon">MD</div><div><h3>Markdown</h3><p>Útil para GitHub, editores y documentación.</p></div><button class="btn btn-secondary" @onclick="ExportMarkdown">Descargar</button></article>
+        <article class="format-card compact"><div class="backup-icon">HTML</div><div><h3>Página HTML</h3><p>Archivo visual que se abre en cualquier navegador.</p></div><button class="btn btn-secondary" @onclick="ExportHtml">Descargar</button></article>
+        <article class="format-card compact"><div class="backup-icon">ICS</div><div><h3>Calendario</h3><p>Importa actividades en Google Calendar, Outlook o Apple Calendar.</p></div><button class="btn btn-secondary" @onclick="ExportIcs">Descargar</button></article>
+    </div>
+</section>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert @(success ? "success" : "error")">@message</div>
+}
+
+<section class="page-card privacy-box">
+    <h2>Resumen actual</h2>
+    <div class="data-summary"><span><strong>@DataService.Data.Notes.Count</strong> notas</span><span><strong>@DataService.Data.Activities.Count</strong> actividades</span><span><strong>@DataService.Data.Activities.Count(x => !x.IsCompleted)</strong> pendientes</span></div>
+</section>
 
 @code {
-private ElementReference fileInput; private string message=""; private bool success;
-protected override async Task OnInitializedAsync()=>await DataService.InitializeAsync();
-private async Task ExportJson()=>await Storage.DownloadAsync($"apuntador-respaldo-{DateTime.Now:yyyyMMdd-HHmm}.json",DataService.CreateBackupJson(),"application/json");
-private async Task ExportText()=>await Storage.DownloadAsync($"apuntador-notas-{DateTime.Now:yyyyMMdd-HHmm}.txt",DataService.CreateTextExport(),"text/plain;charset=utf-8");
-private async Task Import(){try{var json=await Storage.ReadFileAsync(fileInput);var result=await DataService.ImportAsync(json);success=result.Success;message=result.Message;}catch{success=false;message="Selecciona un archivo JSON antes de importar.";}}
+    private ElementReference fileInput;
+    private string message = "";
+    private bool success;
+    private string Stamp => DateTime.Now.ToString("yyyyMMdd-HHmm");
+
+    protected override async Task OnInitializedAsync() => await DataService.InitializeAsync();
+    private async Task ExportJson() => await Storage.DownloadAsync($"apuntador-respaldo-{Stamp}.json", DataService.CreateBackupJson(), "application/json;charset=utf-8");
+    private async Task ExportText() => await Storage.DownloadAsync($"apuntador-completo-{Stamp}.txt", DataService.CreateTextExport(), "text/plain;charset=utf-8");
+    private async Task ExportNotesCsv() => await Storage.DownloadAsync($"apuntador-notas-{Stamp}.csv", "\uFEFF" + DataService.CreateNotesCsv(), "text/csv;charset=utf-8");
+    private async Task ExportActivitiesCsv() => await Storage.DownloadAsync($"apuntador-actividades-{Stamp}.csv", "\uFEFF" + DataService.CreateActivitiesCsv(), "text/csv;charset=utf-8");
+    private async Task ExportMarkdown() => await Storage.DownloadAsync($"apuntador-{Stamp}.md", DataService.CreateMarkdownExport(), "text/markdown;charset=utf-8");
+    private async Task ExportHtml() => await Storage.DownloadAsync($"apuntador-{Stamp}.html", DataService.CreateHtmlExport(), "text/html;charset=utf-8");
+    private async Task ExportIcs() => await Storage.DownloadAsync($"apuntador-calendario-{Stamp}.ics", DataService.CreateCalendarIcs(), "text/calendar;charset=utf-8");
+
+    private async Task Import()
+    {
+        try
+        {
+            var json = await Storage.ReadFileAsync(fileInput);
+            var result = await DataService.ImportAsync(json);
+            success = result.Success;
+            message = result.Message;
+        }
+        catch
+        {
+            success = false;
+            message = "Selecciona un archivo JSON antes de importar.";
+        }
+    }
 }
